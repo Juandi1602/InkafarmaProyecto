@@ -1,0 +1,3416 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+InkafarmaProyecto/
+  Formularios/
+    FormClientes.cs
+    FormClientes.Designer.cs
+    FormClientes.resx
+    FormDevoluciones.cs
+    FormDevoluciones.Designer.cs
+    FormDevoluciones.resx
+    FormMenu.cs
+    FormMenu.Designer.cs
+    FormMenu.resx
+    FormProductosBoticas.cs
+    FormProductosBoticas.Designer.cs
+    FormProductosBoticas.resx
+    FormReportes.cs
+    FormReportes.Designer.cs
+    FormReportes.resx
+    FormVentas.cs
+    FormVentas.Designer.cs
+    FormVentas.resx
+  Interfaces/
+    ClienteRepositorio.cs
+    IBoticaRepositorio.cs
+    IClienteRepositorio.cs
+    IConexionDB.cs
+    IDevolucionRepositorio.cs
+    IProductoRepositorio.cs
+    IReglaDevolucion.cs
+    IReporte.cs
+    IVentaRepositorio.cs
+  Modelos/
+    Modelos.cs
+    ModeloVentas.cs
+    Vistas.cs
+  Repositorios/
+    BoticaRepositorio.cs
+    ConexionDB.cs
+    DevolucionRepositorio.cs
+    ProductoRepositorio.cs
+    Reportes.cs
+    VentaRepositorio.cs
+  Servicios/
+    DevolucionServicio.cs
+    Reglas.cs
+    VentaServicio.cs
+  Form1.cs
+  Form1.Designer.cs
+  Form1.resx
+  InkafarmaProyecto.csproj
+  Program.cs
+.gitattributes
+.gitignore
+InkafarmaProyecto.slnx
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="InkafarmaProyecto/Formularios/FormClientes.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Formularios;
+
+public partial class FormClientes : Form
+{
+    private readonly IClienteRepositorio _repo;
+    private int _idSeleccionado = 0;
+
+    private readonly TextBox txtDni = new() { Left = 100, Top = 15, Width = 220, MaxLength = 8 };
+    private readonly TextBox txtNombres = new() { Left = 100, Top = 45, Width = 220 };
+    private readonly TextBox txtTelefono = new() { Left = 100, Top = 75, Width = 220 };
+    private readonly TextBox txtCorreo = new() { Left = 100, Top = 105, Width = 220 };
+    private readonly Button btnGuardar = new() { Text = "Guardar", Left = 340, Top = 14, Width = 90 };
+    private readonly Button btnEliminar = new() { Text = "Eliminar", Left = 340, Top = 44, Width = 90 };
+    private readonly Button btnLimpiar = new() { Text = "Limpiar", Left = 340, Top = 74, Width = 90 };
+    private readonly DataGridView dgv = new()
+    {
+        Left = 15,
+        Top = 145,
+        Width = 640,
+        Height = 230,
+        ReadOnly = true,
+        AllowUserToAddRows = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+
+    public FormClientes(IClienteRepositorio repo)
+    {
+        InitializeComponent();
+        _repo = repo;
+
+        Text = "Clientes";
+        ClientSize = new Size(670, 390);
+        StartPosition = FormStartPosition.CenterScreen;
+
+        Controls.Add(new Label { Text = "DNI", Left = 15, Top = 18, Width = 80 });
+        Controls.Add(new Label { Text = "Nombres", Left = 15, Top = 48, Width = 80 });
+        Controls.Add(new Label { Text = "Teléfono", Left = 15, Top = 78, Width = 80 });
+        Controls.Add(new Label { Text = "Correo", Left = 15, Top = 108, Width = 80 });
+        Controls.AddRange(new Control[] { txtDni, txtNombres, txtTelefono, txtCorreo, btnGuardar, btnEliminar, btnLimpiar, dgv });
+
+        btnGuardar.Click += (s, e) => Guardar();
+        btnEliminar.Click += (s, e) => Eliminar();
+        btnLimpiar.Click += (s, e) => Limpiar();
+        dgv.CellClick += (s, e) => Seleccionar();
+
+        Cargar();
+    }
+
+    private void Cargar()
+    {
+        dgv.DataSource = _repo.Listar();
+    }
+
+    private void Guardar()
+    {
+        if (txtDni.Text.Length != 8 || string.IsNullOrWhiteSpace(txtNombres.Text))
+        {
+            MessageBox.Show("DNI de 8 dígitos y nombres obligatorios.");
+            return;
+        }
+
+        var x = new Cliente
+        {
+            IdCliente = _idSeleccionado,
+            Dni = txtDni.Text.Trim(),
+            Nombres = txtNombres.Text.Trim(),
+            Telefono = txtTelefono.Text.Trim(),
+            Correo = txtCorreo.Text.Trim()
+        };
+
+        try
+        {
+            if (_idSeleccionado == 0) _repo.Insertar(x);
+            else _repo.Actualizar(x);
+            Limpiar();
+            Cargar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Error: " + ex.Message);
+        }
+    }
+
+    private void Eliminar()
+    {
+        if (_idSeleccionado == 0) return;
+        try
+        {
+            _repo.Eliminar(_idSeleccionado);
+            Limpiar();
+            Cargar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("No se puede eliminar (tiene ventas asociadas): " + ex.Message);
+        }
+    }
+
+    private void Seleccionar()
+    {
+        if (dgv.CurrentRow?.DataBoundItem is Cliente x)
+        {
+            _idSeleccionado = x.IdCliente;
+            txtDni.Text = x.Dni;
+            txtNombres.Text = x.Nombres;
+            txtTelefono.Text = x.Telefono;
+            txtCorreo.Text = x.Correo;
+        }
+    }
+
+    private void Limpiar()
+    {
+        _idSeleccionado = 0;
+        txtDni.Clear();
+        txtNombres.Clear();
+        txtTelefono.Clear();
+        txtCorreo.Clear();
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormClientes.Designer.cs">
+namespace InkafarmaProyecto.Formularios
+{
+    partial class FormClientes
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Text = "FormClientes";
+        }
+
+        #endregion
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormClientes.resx">
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormDevoluciones.cs">
+using InkafarmaProyecto.Modelos;
+using InkafarmaProyecto.Servicios;
+
+namespace InkafarmaProyecto.Formularios;
+
+public partial class FormDevoluciones : Form
+{
+    private readonly DevolucionServicio _servicio;
+
+    private readonly ComboBox cmbDetalle = new() { Left = 100, Top = 15, Width = 450, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly NumericUpDown nudCantidad = new() { Left = 100, Top = 45, Width = 60, Minimum = 1, Maximum = 999 };
+    private readonly ComboBox cmbMotivo = new() { Left = 100, Top = 75, Width = 220, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly TextBox txtObs = new() { Left = 100, Top = 105, Width = 450 };
+    private readonly Button btnRegistrar = new() { Text = "Registrar", Left = 570, Top = 14, Width = 100 };
+    private readonly ComboBox cmbResolucion = new() { Left = 100, Top = 350, Width = 120, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox cmbDestino = new() { Left = 330, Top = 350, Width = 120, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly Button btnAprobar = new() { Text = "Aprobar", Left = 480, Top = 349, Width = 90 };
+    private readonly Button btnRechazar = new() { Text = "Rechazar", Left = 580, Top = 349, Width = 90 };
+    private readonly DataGridView dgv = new()
+    {
+        Left = 15,
+        Top = 145,
+        Width = 730,
+        Height = 190,
+        ReadOnly = true,
+        AllowUserToAddRows = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+
+    public FormDevoluciones(DevolucionServicio servicio)
+    {
+        InitializeComponent();
+        _servicio = servicio;
+
+        Text = "Devoluciones de clientes";
+        ClientSize = new Size(760, 395);
+        StartPosition = FormStartPosition.CenterScreen;
+
+        cmbMotivo.Items.AddRange(new object[] { "Producto dañado", "Error en la venta", "Producto equivocado", "Reacción adversa", "Otro" });
+        cmbMotivo.SelectedIndex = 0;
+        cmbResolucion.Items.AddRange(new object[] { "Reembolso", "Cambio" });
+        cmbResolucion.SelectedIndex = 0;
+        cmbDestino.Items.AddRange(new object[] { "Reponer stock", "Merma" });
+        cmbDestino.SelectedIndex = 0;
+
+        Controls.Add(new Label { Text = "Venta", Left = 15, Top = 18, Width = 80 });
+        Controls.Add(new Label { Text = "Cantidad", Left = 15, Top = 48, Width = 80 });
+        Controls.Add(new Label { Text = "Motivo", Left = 15, Top = 78, Width = 80 });
+        Controls.Add(new Label { Text = "Observación", Left = 15, Top = 108, Width = 80 });
+        Controls.Add(new Label { Text = "Resolución", Left = 15, Top = 353, Width = 80 });
+        Controls.Add(new Label { Text = "Destino", Left = 250, Top = 353, Width = 80 });
+        Controls.AddRange(new Control[] { cmbDetalle, nudCantidad, cmbMotivo, txtObs, btnRegistrar, cmbResolucion, cmbDestino, btnAprobar, btnRechazar, dgv });
+
+        btnRegistrar.Click += (s, e) => Registrar();
+        btnAprobar.Click += (s, e) => Aprobar();
+        btnRechazar.Click += (s, e) => Rechazar();
+
+        cmbDetalle.DataSource = _servicio.ListarDetallesVenta();
+        cmbDetalle.DisplayMember = "Texto";
+        Cargar();
+    }
+
+    private void Cargar()
+    {
+        dgv.DataSource = _servicio.Listar();
+    }
+
+    private void Registrar()
+    {
+        if (cmbDetalle.SelectedItem is not DetalleVentaVista d)
+        {
+            MessageBox.Show("Selecciona una venta.");
+            return;
+        }
+
+        try
+        {
+            var error = _servicio.Registrar(d, (int)nudCantidad.Value, cmbMotivo.Text, txtObs.Text.Trim());
+            if (error != null)
+            {
+                MessageBox.Show(error);
+                return;
+            }
+            txtObs.Clear();
+            Cargar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Error: " + ex.Message);
+        }
+    }
+
+    private void Aprobar()
+    {
+        if (dgv.CurrentRow?.DataBoundItem is not DevolucionVista v) return;
+        try
+        {
+            _servicio.Aprobar(v.IdDevolucion, cmbResolucion.Text, cmbDestino.Text);
+            Cargar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
+        }
+    }
+
+    private void Rechazar()
+    {
+        if (dgv.CurrentRow?.DataBoundItem is not DevolucionVista v) return;
+        try
+        {
+            _servicio.Rechazar(v.IdDevolucion);
+            Cargar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
+        }
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormDevoluciones.Designer.cs">
+namespace InkafarmaProyecto.Formularios
+{
+    partial class FormDevoluciones
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Text = "FormDevoluciones";
+        }
+
+        #endregion
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormDevoluciones.resx">
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormMenu.cs">
+namespace InkafarmaProyecto.Formularios;
+
+public partial class FormMenu : Form
+{
+    public FormMenu(IEnumerable<(string Titulo, Func<Form> Crear)> opciones)
+    {
+        InitializeComponent();
+
+        var lista = opciones.ToList();
+
+        Text = "Inkafarma - Devolución de productos a clientes";
+        ClientSize = new Size(360, 80 + lista.Count * 50);
+        StartPosition = FormStartPosition.CenterScreen;
+        FormBorderStyle = FormBorderStyle.FixedSingle;
+        MaximizeBox = false;
+
+        Controls.Add(new Label
+        {
+            Text = "Menú principal",
+            Left = 40,
+            Top = 20,
+            Width = 280,
+            Font = new Font("Segoe UI", 13, FontStyle.Bold)
+        });
+
+        for (int i = 0; i < lista.Count; i++)
+        {
+            var crear = lista[i].Crear;
+            var boton = new Button
+            {
+                Text = lista[i].Titulo,
+                Left = 40,
+                Top = 65 + i * 50,
+                Width = 280,
+                Height = 40
+            };
+            boton.Click += (s, e) =>
+            {
+                using var ventana = crear();
+                ventana.ShowDialog(this);
+            };
+            Controls.Add(boton);
+        }
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormMenu.Designer.cs">
+namespace InkafarmaProyecto.Formularios
+{
+    partial class FormMenu
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Text = "FormMenu";
+        }
+
+        #endregion
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormMenu.resx">
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormProductosBoticas.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Formularios;
+
+public partial class FormProductosBoticas : Form
+{
+    private readonly IProductoRepositorio _productos;
+    private readonly IBoticaRepositorio _boticas;
+    private int _idProducto = 0;
+    private int _idBotica = 0;
+
+    private readonly TabControl tabs = new() { Dock = DockStyle.Fill };
+    private readonly TabPage tabProd = new("Productos");
+    private readonly TabPage tabBot = new("Boticas");
+
+    // Productos
+    private readonly TextBox txtCodigo = new() { Left = 100, Top = 15, Width = 220 };
+    private readonly TextBox txtNombreP = new() { Left = 100, Top = 45, Width = 220 };
+    private readonly TextBox txtPrecio = new() { Left = 100, Top = 75, Width = 220 };
+    private readonly NumericUpDown nudStock = new() { Left = 100, Top = 105, Width = 80, Maximum = 100000 };
+    private readonly Button btnGuardarP = new() { Text = "Guardar", Left = 340, Top = 14, Width = 90 };
+    private readonly Button btnEliminarP = new() { Text = "Eliminar", Left = 340, Top = 44, Width = 90 };
+    private readonly Button btnLimpiarP = new() { Text = "Limpiar", Left = 340, Top = 74, Width = 90 };
+    private readonly DataGridView dgvP = new()
+    {
+        Left = 15,
+        Top = 145,
+        Width = 640,
+        Height = 230,
+        ReadOnly = true,
+        AllowUserToAddRows = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+
+    // Boticas
+    private readonly TextBox txtNombreB = new() { Left = 100, Top = 15, Width = 220 };
+    private readonly TextBox txtDistrito = new() { Left = 100, Top = 45, Width = 220 };
+    private readonly TextBox txtDireccion = new() { Left = 100, Top = 75, Width = 220 };
+    private readonly Button btnGuardarB = new() { Text = "Guardar", Left = 340, Top = 14, Width = 90 };
+    private readonly Button btnEliminarB = new() { Text = "Eliminar", Left = 340, Top = 44, Width = 90 };
+    private readonly Button btnLimpiarB = new() { Text = "Limpiar", Left = 340, Top = 74, Width = 90 };
+    private readonly DataGridView dgvB = new()
+    {
+        Left = 15,
+        Top = 145,
+        Width = 640,
+        Height = 230,
+        ReadOnly = true,
+        AllowUserToAddRows = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+
+    public FormProductosBoticas(IProductoRepositorio productos, IBoticaRepositorio boticas)
+    {
+        InitializeComponent();
+        _productos = productos;
+        _boticas = boticas;
+
+        Text = "Productos y boticas";
+        ClientSize = new Size(690, 420);
+        StartPosition = FormStartPosition.CenterScreen;
+
+        tabProd.Controls.Add(new Label { Text = "Código", Left = 15, Top = 18, Width = 80 });
+        tabProd.Controls.Add(new Label { Text = "Nombre", Left = 15, Top = 48, Width = 80 });
+        tabProd.Controls.Add(new Label { Text = "Precio", Left = 15, Top = 78, Width = 80 });
+        tabProd.Controls.Add(new Label { Text = "Stock", Left = 15, Top = 108, Width = 80 });
+        tabProd.Controls.AddRange(new Control[] { txtCodigo, txtNombreP, txtPrecio, nudStock, btnGuardarP, btnEliminarP, btnLimpiarP, dgvP });
+
+        tabBot.Controls.Add(new Label { Text = "Nombre", Left = 15, Top = 18, Width = 80 });
+        tabBot.Controls.Add(new Label { Text = "Distrito", Left = 15, Top = 48, Width = 80 });
+        tabBot.Controls.Add(new Label { Text = "Dirección", Left = 15, Top = 78, Width = 80 });
+        tabBot.Controls.AddRange(new Control[] { txtNombreB, txtDistrito, txtDireccion, btnGuardarB, btnEliminarB, btnLimpiarB, dgvB });
+
+        tabs.TabPages.Add(tabProd);
+        tabs.TabPages.Add(tabBot);
+        Controls.Add(tabs);
+
+        btnGuardarP.Click += (s, e) => GuardarProducto();
+        btnEliminarP.Click += (s, e) => EliminarProducto();
+        btnLimpiarP.Click += (s, e) => LimpiarProducto();
+        dgvP.CellClick += (s, e) => SeleccionarProducto();
+
+        btnGuardarB.Click += (s, e) => GuardarBotica();
+        btnEliminarB.Click += (s, e) => EliminarBotica();
+        btnLimpiarB.Click += (s, e) => LimpiarBotica();
+        dgvB.CellClick += (s, e) => SeleccionarBotica();
+
+        CargarProductos();
+        CargarBoticas();
+    }
+
+    // ---------- Productos ----------
+    private void CargarProductos()
+    {
+        dgvP.DataSource = _productos.Listar();
+    }
+
+    private void GuardarProducto()
+    {
+        if (string.IsNullOrWhiteSpace(txtCodigo.Text) || string.IsNullOrWhiteSpace(txtNombreP.Text)
+            || !decimal.TryParse(txtPrecio.Text, out var precio) || precio <= 0)
+        {
+            MessageBox.Show("Código, nombre y un precio válido son obligatorios.");
+            return;
+        }
+
+        var p = new Producto
+        {
+            IdProducto = _idProducto,
+            Codigo = txtCodigo.Text.Trim(),
+            Nombre = txtNombreP.Text.Trim(),
+            Precio = precio,
+            Stock = (int)nudStock.Value
+        };
+
+        try
+        {
+            if (_idProducto == 0) _productos.Insertar(p);
+            else _productos.Actualizar(p);
+            LimpiarProducto();
+            CargarProductos();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Error: " + ex.Message);
+        }
+    }
+
+    private void EliminarProducto()
+    {
+        if (_idProducto == 0) return;
+        try
+        {
+            _productos.Eliminar(_idProducto);
+            LimpiarProducto();
+            CargarProductos();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("No se puede eliminar (tiene ventas asociadas): " + ex.Message);
+        }
+    }
+
+    private void SeleccionarProducto()
+    {
+        if (dgvP.CurrentRow?.DataBoundItem is Producto p)
+        {
+            _idProducto = p.IdProducto;
+            txtCodigo.Text = p.Codigo;
+            txtNombreP.Text = p.Nombre;
+            txtPrecio.Text = p.Precio.ToString();
+            nudStock.Value = p.Stock;
+        }
+    }
+
+    private void LimpiarProducto()
+    {
+        _idProducto = 0;
+        txtCodigo.Clear();
+        txtNombreP.Clear();
+        txtPrecio.Clear();
+        nudStock.Value = 0;
+    }
+
+    // ---------- Boticas ----------
+    private void CargarBoticas()
+    {
+        dgvB.DataSource = _boticas.Listar();
+    }
+
+    private void GuardarBotica()
+    {
+        if (string.IsNullOrWhiteSpace(txtNombreB.Text) || string.IsNullOrWhiteSpace(txtDistrito.Text))
+        {
+            MessageBox.Show("Nombre y distrito son obligatorios.");
+            return;
+        }
+
+        var b = new Botica
+        {
+            IdBotica = _idBotica,
+            Nombre = txtNombreB.Text.Trim(),
+            Distrito = txtDistrito.Text.Trim(),
+            Direccion = txtDireccion.Text.Trim()
+        };
+
+        try
+        {
+            if (_idBotica == 0) _boticas.Insertar(b);
+            else _boticas.Actualizar(b);
+            LimpiarBotica();
+            CargarBoticas();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Error: " + ex.Message);
+        }
+    }
+
+    private void EliminarBotica()
+    {
+        if (_idBotica == 0) return;
+        try
+        {
+            _boticas.Eliminar(_idBotica);
+            LimpiarBotica();
+            CargarBoticas();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("No se puede eliminar (tiene ventas asociadas): " + ex.Message);
+        }
+    }
+
+    private void SeleccionarBotica()
+    {
+        if (dgvB.CurrentRow?.DataBoundItem is Botica b)
+        {
+            _idBotica = b.IdBotica;
+            txtNombreB.Text = b.Nombre;
+            txtDistrito.Text = b.Distrito;
+            txtDireccion.Text = b.Direccion;
+        }
+    }
+
+    private void LimpiarBotica()
+    {
+        _idBotica = 0;
+        txtNombreB.Clear();
+        txtDistrito.Clear();
+        txtDireccion.Clear();
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormProductosBoticas.Designer.cs">
+namespace InkafarmaProyecto.Formularios
+{
+    partial class FormProductosBoticas
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Text = "FormProductosBoticas";
+        }
+
+        #endregion
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormProductosBoticas.resx">
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormReportes.cs">
+using InkafarmaProyecto.Interfaces;
+
+namespace InkafarmaProyecto.Formularios;
+
+public partial class FormReportes : Form
+{
+    private readonly ComboBox cmbReporte = new() { Left = 100, Top = 15, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly Button btnGenerar = new() { Text = "Generar", Left = 420, Top = 14, Width = 100 };
+    private readonly DataGridView dgv = new()
+    {
+        Left = 15,
+        Top = 55,
+        Width = 640,
+        Height = 300,
+        ReadOnly = true,
+        AllowUserToAddRows = false,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+
+    public FormReportes(IEnumerable<IReporte> reportes)
+    {
+        InitializeComponent();
+
+        Text = "Reportes de devoluciones";
+        ClientSize = new Size(670, 370);
+        StartPosition = FormStartPosition.CenterScreen;
+
+        Controls.Add(new Label { Text = "Reporte", Left = 15, Top = 18, Width = 80 });
+        Controls.AddRange(new Control[] { cmbReporte, btnGenerar, dgv });
+
+        cmbReporte.DataSource = reportes.ToList();
+        cmbReporte.DisplayMember = "Nombre";
+
+        btnGenerar.Click += (s, e) => Generar();
+        Generar();
+    }
+
+    private void Generar()
+    {
+        if (cmbReporte.SelectedItem is not IReporte r) return;
+        try
+        {
+            dgv.DataSource = r.Ejecutar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Error: " + ex.Message);
+        }
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormReportes.Designer.cs">
+namespace InkafarmaProyecto.Formularios
+{
+    partial class FormReportes
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Text = "FormReportes";
+        }
+
+        #endregion
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormReportes.resx">
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormVentas.cs">
+using System.ComponentModel;
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+using InkafarmaProyecto.Servicios;
+
+namespace InkafarmaProyecto.Formularios;
+
+public partial class FormVentas : Form
+{
+    private readonly VentaServicio _servicio;
+    private readonly IProductoRepositorio _productos;
+    private readonly BindingList<ItemVenta> _items = new();
+
+    private readonly ComboBox cmbCliente = new() { Left = 100, Top = 15, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox cmbBotica = new() { Left = 100, Top = 45, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox cmbProducto = new() { Left = 100, Top = 75, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly NumericUpDown nudCantidad = new() { Left = 470, Top = 75, Width = 60, Minimum = 1, Maximum = 999 };
+    private readonly Button btnAgregar = new() { Text = "Agregar", Left = 550, Top = 74, Width = 90 };
+    private readonly Button btnQuitar = new() { Text = "Quitar", Left = 450, Top = 245, Width = 90 };
+    private readonly Button btnRegistrar = new() { Text = "Registrar venta", Left = 550, Top = 245, Width = 150 };
+    private readonly Label lblTotal = new() { Text = "Total: S/ 0.00", Left = 15, Top = 250, Width = 250, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+    private readonly DataGridView dgvItems = new()
+    {
+        Left = 15,
+        Top = 110,
+        Width = 725,
+        Height = 125,
+        ReadOnly = true,
+        AllowUserToAddRows = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+    private readonly DataGridView dgvVentas = new()
+    {
+        Left = 15,
+        Top = 310,
+        Width = 725,
+        Height = 190,
+        ReadOnly = true,
+        AllowUserToAddRows = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+
+    public FormVentas(VentaServicio servicio, IClienteRepositorio clientes, IBoticaRepositorio boticas, IProductoRepositorio productos)
+    {
+        InitializeComponent();
+        _servicio = servicio;
+        _productos = productos;
+
+        Text = "Ventas";
+        ClientSize = new Size(760, 515);
+        StartPosition = FormStartPosition.CenterScreen;
+
+        Controls.Add(new Label { Text = "Cliente", Left = 15, Top = 18, Width = 80 });
+        Controls.Add(new Label { Text = "Botica", Left = 15, Top = 48, Width = 80 });
+        Controls.Add(new Label { Text = "Producto", Left = 15, Top = 78, Width = 80 });
+        Controls.Add(new Label { Text = "Cant.", Left = 420, Top = 78, Width = 45 });
+        Controls.Add(new Label { Text = "Historial de ventas", Left = 15, Top = 287, Width = 200 });
+        Controls.AddRange(new Control[] { cmbCliente, cmbBotica, cmbProducto, nudCantidad, btnAgregar, dgvItems, lblTotal, btnQuitar, btnRegistrar, dgvVentas });
+
+        cmbCliente.DataSource = clientes.Listar();
+        cmbCliente.DisplayMember = "Nombres";
+        cmbBotica.DataSource = boticas.Listar();
+        cmbBotica.DisplayMember = "Nombre";
+        CargarProductos();
+
+        dgvItems.DataSource = _items;
+        btnAgregar.Click += (s, e) => Agregar();
+        btnQuitar.Click += (s, e) => Quitar();
+        btnRegistrar.Click += (s, e) => Registrar();
+
+        CargarVentas();
+    }
+
+    private void CargarProductos()
+    {
+        cmbProducto.DataSource = _productos.Listar();
+        cmbProducto.DisplayMember = "Nombre";
+    }
+
+    private void CargarVentas()
+    {
+        dgvVentas.DataSource = _servicio.Listar();
+    }
+
+    private void ActualizarTotal()
+    {
+        lblTotal.Text = $"Total: S/ {_items.Sum(i => i.Subtotal):0.00}";
+    }
+
+    private void Agregar()
+    {
+        if (cmbProducto.SelectedItem is not Producto p) return;
+
+        int cantidad = (int)nudCantidad.Value;
+        var existente = _items.FirstOrDefault(i => i.IdProducto == p.IdProducto);
+        int total = cantidad + (existente?.Cantidad ?? 0);
+
+        if (total > p.Stock)
+        {
+            MessageBox.Show($"Stock insuficiente (disponible: {p.Stock}).");
+            return;
+        }
+
+        if (existente != null)
+        {
+            existente.Cantidad = total;
+            _items.ResetBindings();
+        }
+        else
+        {
+            _items.Add(new ItemVenta
+            {
+                IdProducto = p.IdProducto,
+                Producto = p.Nombre,
+                Cantidad = cantidad,
+                PrecioUnitario = p.Precio
+            });
+        }
+        ActualizarTotal();
+    }
+
+    private void Quitar()
+    {
+        if (dgvItems.CurrentRow?.DataBoundItem is ItemVenta it)
+        {
+            _items.Remove(it);
+            ActualizarTotal();
+        }
+    }
+
+    private void Registrar()
+    {
+        if (cmbCliente.SelectedItem is not Cliente c || cmbBotica.SelectedItem is not Botica b) return;
+
+        try
+        {
+            string boleta = _servicio.Registrar(c.IdCliente, b.IdBotica, _items.ToList());
+            MessageBox.Show($"Venta registrada: {boleta}");
+            _items.Clear();
+            ActualizarTotal();
+            CargarVentas();
+            CargarProductos();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
+        }
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormVentas.Designer.cs">
+namespace InkafarmaProyecto.Formularios
+{
+    partial class FormVentas
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Text = "FormVentas";
+        }
+
+        #endregion
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Formularios/FormVentas.resx">
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/ClienteRepositorio.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Repositorios;
+
+public class ClienteRepositorio : IClienteRepositorio
+{
+    private readonly IConexionBD _conexion;
+
+    public ClienteRepositorio(IConexionBD conexion)
+    {
+        _conexion = conexion;
+    }
+
+    public List<Cliente> Listar()
+    {
+        var lista = new List<Cliente>();
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("SELECT IdCliente, Dni, Nombres, Telefono, Correo FROM Cliente", c);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            lista.Add(new Cliente
+            {
+                IdCliente = r.GetInt32(0),
+                Dni = r.GetString(1),
+                Nombres = r.GetString(2),
+                Telefono = r.IsDBNull(3) ? "" : r.GetString(3),
+                Correo = r.IsDBNull(4) ? "" : r.GetString(4)
+            });
+        }
+        return lista;
+    }
+
+    public void Insertar(Cliente x)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("INSERT INTO Cliente (Dni, Nombres, Telefono, Correo) VALUES (@d, @n, @t, @c)", c);
+        cmd.Parameters.AddWithValue("@d", x.Dni);
+        cmd.Parameters.AddWithValue("@n", x.Nombres);
+        cmd.Parameters.AddWithValue("@t", x.Telefono);
+        cmd.Parameters.AddWithValue("@c", x.Correo);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Actualizar(Cliente x)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("UPDATE Cliente SET Dni=@d, Nombres=@n, Telefono=@t, Correo=@c WHERE IdCliente=@id", c);
+        cmd.Parameters.AddWithValue("@d", x.Dni);
+        cmd.Parameters.AddWithValue("@n", x.Nombres);
+        cmd.Parameters.AddWithValue("@t", x.Telefono);
+        cmd.Parameters.AddWithValue("@c", x.Correo);
+        cmd.Parameters.AddWithValue("@id", x.IdCliente);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Eliminar(int id)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("DELETE FROM Cliente WHERE IdCliente=@id", c);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.ExecuteNonQuery();
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IBoticaRepositorio.cs">
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IBoticaRepositorio
+{
+    List<Botica> Listar();
+    void Insertar(Botica b);
+    void Actualizar(Botica b);
+    void Eliminar(int id);
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IClienteRepositorio.cs">
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IClienteRepositorio
+{
+    List<Cliente> Listar();
+    void Insertar(Cliente c);
+    void Actualizar(Cliente c);
+    void Eliminar(int id);
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IConexionDB.cs">
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IConexionBD
+{
+    MySqlConnection CrearConexion();
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IDevolucionRepositorio.cs">
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IDevolucionRepositorio
+{
+    List<DetalleVentaVista> ListarDetallesVenta();
+    List<DevolucionVista> Listar();
+    void Insertar(Devolucion d);
+    void Resolver(int idDevolucion, string estado, string? resolucion, string? destino);
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IProductoRepositorio.cs">
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IProductoRepositorio
+{
+    List<Producto> Listar();
+    void Insertar(Producto p);
+    void Actualizar(Producto p);
+    void Eliminar(int id);
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IReglaDevolucion.cs">
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IReglaDevolucion
+{
+    string? Validar(DetalleVentaVista detalle, int cantidad, DateTime fechaDevolucion);
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IReporte.cs">
+using System.Data;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IReporte
+{
+    string Nombre { get; }
+    DataTable Ejecutar();
+}
+</file>
+
+<file path="InkafarmaProyecto/Interfaces/IVentaRepositorio.cs">
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Interfaces;
+
+public interface IVentaRepositorio
+{
+    List<VentaVista> Listar();
+    string Registrar(Venta venta, List<ItemVenta> items);
+}
+</file>
+
+<file path="InkafarmaProyecto/Modelos/Modelos.cs">
+namespace InkafarmaProyecto.Modelos;
+
+public class Cliente
+{
+    public int IdCliente { get; set; }
+    public string Dni { get; set; } = "";
+    public string Nombres { get; set; } = "";
+    public string Telefono { get; set; } = "";
+    public string Correo { get; set; } = "";
+}
+
+public class Botica
+{
+    public int IdBotica { get; set; }
+    public string Nombre { get; set; } = "";
+    public string Distrito { get; set; } = "";
+    public string Direccion { get; set; } = "";
+}
+
+public class Producto
+{
+    public int IdProducto { get; set; }
+    public string Codigo { get; set; } = "";
+    public string Nombre { get; set; } = "";
+    public decimal Precio { get; set; }
+    public int Stock { get; set; }
+}
+
+public class Venta
+{
+    public int IdVenta { get; set; }
+    public string NumeroBoleta { get; set; } = "";
+    public int IdCliente { get; set; }
+    public int IdBotica { get; set; }
+    public DateTime Fecha { get; set; }
+    public decimal Total { get; set; }
+}
+
+public class DetalleVenta
+{
+    public int IdDetalle { get; set; }
+    public int IdVenta { get; set; }
+    public int IdProducto { get; set; }
+    public int Cantidad { get; set; }
+    public decimal PrecioUnitario { get; set; }
+}
+
+public class Devolucion
+{
+    public int IdDevolucion { get; set; }
+    public int IdDetalle { get; set; }
+    public DateTime Fecha { get; set; }
+    public int Cantidad { get; set; }
+    public string Motivo { get; set; } = "";
+    public string Estado { get; set; } = "Pendiente";
+    public string? Resolucion { get; set; }
+    public string? DestinoProducto { get; set; }
+    public string Observacion { get; set; } = "";
+}
+</file>
+
+<file path="InkafarmaProyecto/Modelos/ModeloVentas.cs">
+namespace InkafarmaProyecto.Modelos;
+
+public class ItemVenta
+{
+    public int IdProducto { get; set; }
+    public string Producto { get; set; } = "";
+    public int Cantidad { get; set; }
+    public decimal PrecioUnitario { get; set; }
+    public decimal Subtotal => Cantidad * PrecioUnitario;
+}
+
+public class VentaVista
+{
+    public int IdVenta { get; set; }
+    public string NumeroBoleta { get; set; } = "";
+    public string Cliente { get; set; } = "";
+    public string Botica { get; set; } = "";
+    public DateTime Fecha { get; set; }
+    public decimal Total { get; set; }
+}
+</file>
+
+<file path="InkafarmaProyecto/Modelos/Vistas.cs">
+namespace InkafarmaProyecto.Modelos;
+
+public class DetalleVentaVista
+{
+    public int IdDetalle { get; set; }
+    public string NumeroBoleta { get; set; } = "";
+    public string Cliente { get; set; } = "";
+    public string Producto { get; set; } = "";
+    public int Cantidad { get; set; }
+    public DateTime FechaVenta { get; set; }
+    public string Texto => $"{NumeroBoleta} | {Cliente} | {Producto} (x{Cantidad})";
+}
+
+public class DevolucionVista
+{
+    public int IdDevolucion { get; set; }
+    public string Boleta { get; set; } = "";
+    public string Cliente { get; set; } = "";
+    public string Producto { get; set; } = "";
+    public int Cantidad { get; set; }
+    public string Motivo { get; set; } = "";
+    public string Estado { get; set; } = "";
+    public DateTime Fecha { get; set; }
+}
+</file>
+
+<file path="InkafarmaProyecto/Repositorios/BoticaRepositorio.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Repositorios;
+
+public class BoticaRepositorio : IBoticaRepositorio
+{
+    private readonly IConexionBD _conexion;
+
+    public BoticaRepositorio(IConexionBD conexion)
+    {
+        _conexion = conexion;
+    }
+
+    public List<Botica> Listar()
+    {
+        var lista = new List<Botica>();
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("SELECT IdBotica, Nombre, Distrito, Direccion FROM Botica", c);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            lista.Add(new Botica
+            {
+                IdBotica = r.GetInt32(0),
+                Nombre = r.GetString(1),
+                Distrito = r.GetString(2),
+                Direccion = r.IsDBNull(3) ? "" : r.GetString(3)
+            });
+        }
+        return lista;
+    }
+
+    public void Insertar(Botica b)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("INSERT INTO Botica (Nombre, Distrito, Direccion) VALUES (@n, @d, @di)", c);
+        cmd.Parameters.AddWithValue("@n", b.Nombre);
+        cmd.Parameters.AddWithValue("@d", b.Distrito);
+        cmd.Parameters.AddWithValue("@di", b.Direccion);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Actualizar(Botica b)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("UPDATE Botica SET Nombre=@n, Distrito=@d, Direccion=@di WHERE IdBotica=@id", c);
+        cmd.Parameters.AddWithValue("@n", b.Nombre);
+        cmd.Parameters.AddWithValue("@d", b.Distrito);
+        cmd.Parameters.AddWithValue("@di", b.Direccion);
+        cmd.Parameters.AddWithValue("@id", b.IdBotica);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Eliminar(int id)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("DELETE FROM Botica WHERE IdBotica=@id", c);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.ExecuteNonQuery();
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Repositorios/ConexionDB.cs">
+using InkafarmaProyecto.Interfaces;
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Repositorios;
+
+public class ConexionBD : IConexionBD
+{
+    private readonly string _cadena;
+
+    public ConexionBD(string cadena)
+    {
+        _cadena = cadena;
+    }
+
+    public MySqlConnection CrearConexion()
+    {
+        return new MySqlConnection(_cadena);
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Repositorios/DevolucionRepositorio.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Repositorios;
+
+public class DevolucionRepositorio : IDevolucionRepositorio
+{
+    private readonly IConexionBD _conexion;
+
+    public DevolucionRepositorio(IConexionBD conexion)
+    {
+        _conexion = conexion;
+    }
+
+    public List<DetalleVentaVista> ListarDetallesVenta()
+    {
+        var lista = new List<DetalleVentaVista>();
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand(@"
+            SELECT d.IdDetalle, v.NumeroBoleta, c.Nombres, p.Nombre, d.Cantidad, v.Fecha
+            FROM DetalleVenta d
+            JOIN Venta v ON v.IdVenta = d.IdVenta
+            JOIN Cliente c ON c.IdCliente = v.IdCliente
+            JOIN Producto p ON p.IdProducto = d.IdProducto
+            ORDER BY v.Fecha DESC", c);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            lista.Add(new DetalleVentaVista
+            {
+                IdDetalle = r.GetInt32(0),
+                NumeroBoleta = r.GetString(1),
+                Cliente = r.GetString(2),
+                Producto = r.GetString(3),
+                Cantidad = r.GetInt32(4),
+                FechaVenta = r.GetDateTime(5)
+            });
+        }
+        return lista;
+    }
+
+    public List<DevolucionVista> Listar()
+    {
+        var lista = new List<DevolucionVista>();
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand(@"
+            SELECT dv.IdDevolucion, v.NumeroBoleta, c.Nombres, p.Nombre,
+                   dv.Cantidad, dv.Motivo, dv.Estado, dv.Fecha
+            FROM Devolucion dv
+            JOIN DetalleVenta d ON d.IdDetalle = dv.IdDetalle
+            JOIN Venta v ON v.IdVenta = d.IdVenta
+            JOIN Cliente c ON c.IdCliente = v.IdCliente
+            JOIN Producto p ON p.IdProducto = d.IdProducto
+            ORDER BY dv.IdDevolucion DESC", c);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            lista.Add(new DevolucionVista
+            {
+                IdDevolucion = r.GetInt32(0),
+                Boleta = r.GetString(1),
+                Cliente = r.GetString(2),
+                Producto = r.GetString(3),
+                Cantidad = r.GetInt32(4),
+                Motivo = r.GetString(5),
+                Estado = r.GetString(6),
+                Fecha = r.GetDateTime(7)
+            });
+        }
+        return lista;
+    }
+
+    public void Insertar(Devolucion d)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand(@"
+            INSERT INTO Devolucion (IdDetalle, Fecha, Cantidad, Motivo, Estado, Observacion)
+            VALUES (@d, @f, @c, @m, 'Pendiente', @o)", c);
+        cmd.Parameters.AddWithValue("@d", d.IdDetalle);
+        cmd.Parameters.AddWithValue("@f", d.Fecha.Date);
+        cmd.Parameters.AddWithValue("@c", d.Cantidad);
+        cmd.Parameters.AddWithValue("@m", d.Motivo);
+        cmd.Parameters.AddWithValue("@o", d.Observacion);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Resolver(int idDevolucion, string estado, string? resolucion, string? destino)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var tx = c.BeginTransaction();
+        try
+        {
+            using (var cmd = new MySqlCommand(@"
+                UPDATE Devolucion SET Estado=@e, Resolucion=@r, DestinoProducto=@d
+                WHERE IdDevolucion=@id AND Estado='Pendiente'", c, tx))
+            {
+                cmd.Parameters.AddWithValue("@e", estado);
+                cmd.Parameters.AddWithValue("@r", (object?)resolucion ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@d", (object?)destino ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@id", idDevolucion);
+                if (cmd.ExecuteNonQuery() == 0)
+                    throw new InvalidOperationException("La devolución ya fue resuelta.");
+            }
+
+            if (estado == "Aprobada" && destino == "Reponer stock")
+            {
+                using var cmd2 = new MySqlCommand(@"
+                    UPDATE Producto p
+                    JOIN DetalleVenta d ON d.IdProducto = p.IdProducto
+                    JOIN Devolucion dv ON dv.IdDetalle = d.IdDetalle
+                    SET p.Stock = p.Stock + dv.Cantidad
+                    WHERE dv.IdDevolucion = @id", c, tx);
+                cmd2.Parameters.AddWithValue("@id", idDevolucion);
+                cmd2.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Repositorios/ProductoRepositorio.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Repositorios;
+
+public class ProductoRepositorio : IProductoRepositorio
+{
+    private readonly IConexionBD _conexion;
+
+    public ProductoRepositorio(IConexionBD conexion)
+    {
+        _conexion = conexion;
+    }
+
+    public List<Producto> Listar()
+    {
+        var lista = new List<Producto>();
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("SELECT IdProducto, Codigo, Nombre, Precio, Stock FROM Producto", c);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            lista.Add(new Producto
+            {
+                IdProducto = r.GetInt32(0),
+                Codigo = r.GetString(1),
+                Nombre = r.GetString(2),
+                Precio = r.GetDecimal(3),
+                Stock = r.GetInt32(4)
+            });
+        }
+        return lista;
+    }
+
+    public void Insertar(Producto p)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("INSERT INTO Producto (Codigo, Nombre, Precio, Stock) VALUES (@c, @n, @p, @s)", c);
+        cmd.Parameters.AddWithValue("@c", p.Codigo);
+        cmd.Parameters.AddWithValue("@n", p.Nombre);
+        cmd.Parameters.AddWithValue("@p", p.Precio);
+        cmd.Parameters.AddWithValue("@s", p.Stock);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Actualizar(Producto p)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("UPDATE Producto SET Codigo=@c, Nombre=@n, Precio=@p, Stock=@s WHERE IdProducto=@id", c);
+        cmd.Parameters.AddWithValue("@c", p.Codigo);
+        cmd.Parameters.AddWithValue("@n", p.Nombre);
+        cmd.Parameters.AddWithValue("@p", p.Precio);
+        cmd.Parameters.AddWithValue("@s", p.Stock);
+        cmd.Parameters.AddWithValue("@id", p.IdProducto);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Eliminar(int id)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand("DELETE FROM Producto WHERE IdProducto=@id", c);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.ExecuteNonQuery();
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Repositorios/Reportes.cs">
+using System.Data;
+using InkafarmaProyecto.Interfaces;
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Repositorios;
+
+public abstract class ReporteSql : IReporte
+{
+    private readonly IConexionBD _conexion;
+
+    protected ReporteSql(IConexionBD conexion)
+    {
+        _conexion = conexion;
+    }
+
+    public abstract string Nombre { get; }
+    protected abstract string Sql { get; }
+
+    public DataTable Ejecutar()
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var da = new MySqlDataAdapter(Sql, c);
+        var tabla = new DataTable();
+        da.Fill(tabla);
+        return tabla;
+    }
+}
+
+public class ReporteDevolucionesPorMotivo : ReporteSql
+{
+    public ReporteDevolucionesPorMotivo(IConexionBD conexion) : base(conexion) { }
+
+    public override string Nombre => "Devoluciones por motivo";
+
+    protected override string Sql => @"
+        SELECT Motivo, COUNT(*) AS Devoluciones, SUM(Cantidad) AS Unidades
+        FROM Devolucion
+        GROUP BY Motivo
+        ORDER BY Devoluciones DESC";
+}
+
+public class ReporteDevolucionesPorBotica : ReporteSql
+{
+    public ReporteDevolucionesPorBotica(IConexionBD conexion) : base(conexion) { }
+
+    public override string Nombre => "Devoluciones por botica";
+
+    protected override string Sql => @"
+        SELECT b.Nombre AS Botica, COUNT(*) AS Devoluciones, SUM(dv.Cantidad) AS Unidades
+        FROM Devolucion dv
+        JOIN DetalleVenta d ON d.IdDetalle = dv.IdDetalle
+        JOIN Venta v ON v.IdVenta = d.IdVenta
+        JOIN Botica b ON b.IdBotica = v.IdBotica
+        GROUP BY b.Nombre
+        ORDER BY Devoluciones DESC";
+}
+
+public class ReporteDevolucionesPorMes : ReporteSql
+{
+    public ReporteDevolucionesPorMes(IConexionBD conexion) : base(conexion) { }
+
+    public override string Nombre => "Devoluciones por mes";
+
+    protected override string Sql => @"
+        SELECT DATE_FORMAT(Fecha, '%Y-%m') AS Mes, COUNT(*) AS Devoluciones, SUM(Cantidad) AS Unidades
+        FROM Devolucion
+        GROUP BY DATE_FORMAT(Fecha, '%Y-%m')
+        ORDER BY Mes DESC";
+}
+
+public class ReporteProductosMasDevueltos : ReporteSql
+{
+    public ReporteProductosMasDevueltos(IConexionBD conexion) : base(conexion) { }
+
+    public override string Nombre => "Productos más devueltos";
+
+    protected override string Sql => @"
+        SELECT p.Nombre AS Producto, COUNT(*) AS Devoluciones, SUM(dv.Cantidad) AS Unidades
+        FROM Devolucion dv
+        JOIN DetalleVenta d ON d.IdDetalle = dv.IdDetalle
+        JOIN Producto p ON p.IdProducto = d.IdProducto
+        GROUP BY p.Nombre
+        ORDER BY Unidades DESC";
+}
+</file>
+
+<file path="InkafarmaProyecto/Repositorios/VentaRepositorio.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+using MySql.Data.MySqlClient;
+
+namespace InkafarmaProyecto.Repositorios;
+
+public class VentaRepositorio : IVentaRepositorio
+{
+    private readonly IConexionBD _conexion;
+
+    public VentaRepositorio(IConexionBD conexion)
+    {
+        _conexion = conexion;
+    }
+
+    public List<VentaVista> Listar()
+    {
+        var lista = new List<VentaVista>();
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var cmd = new MySqlCommand(@"
+            SELECT v.IdVenta, v.NumeroBoleta, c.Nombres, b.Nombre, v.Fecha, v.Total
+            FROM Venta v
+            JOIN Cliente c ON c.IdCliente = v.IdCliente
+            JOIN Botica b ON b.IdBotica = v.IdBotica
+            ORDER BY v.IdVenta DESC", c);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            lista.Add(new VentaVista
+            {
+                IdVenta = r.GetInt32(0),
+                NumeroBoleta = r.GetString(1),
+                Cliente = r.GetString(2),
+                Botica = r.GetString(3),
+                Fecha = r.GetDateTime(4),
+                Total = r.GetDecimal(5)
+            });
+        }
+        return lista;
+    }
+
+    public string Registrar(Venta venta, List<ItemVenta> items)
+    {
+        using var c = _conexion.CrearConexion();
+        c.Open();
+        using var tx = c.BeginTransaction();
+        try
+        {
+            int siguiente;
+            using (var cmdN = new MySqlCommand("SELECT COALESCE(MAX(IdVenta),0)+1 FROM Venta", c, tx))
+                siguiente = Convert.ToInt32(cmdN.ExecuteScalar());
+            string boleta = "B001-" + siguiente.ToString("D4");
+
+            long idVenta;
+            using (var cmd = new MySqlCommand(@"
+                INSERT INTO Venta (NumeroBoleta, IdCliente, IdBotica, Fecha, Total)
+                VALUES (@b, @c, @bo, @f, @t)", c, tx))
+            {
+                cmd.Parameters.AddWithValue("@b", boleta);
+                cmd.Parameters.AddWithValue("@c", venta.IdCliente);
+                cmd.Parameters.AddWithValue("@bo", venta.IdBotica);
+                cmd.Parameters.AddWithValue("@f", venta.Fecha.Date);
+                cmd.Parameters.AddWithValue("@t", venta.Total);
+                cmd.ExecuteNonQuery();
+                idVenta = cmd.LastInsertedId;
+            }
+
+            foreach (var it in items)
+            {
+                using (var cmdD = new MySqlCommand(@"
+                    INSERT INTO DetalleVenta (IdVenta, IdProducto, Cantidad, PrecioUnitario)
+                    VALUES (@v, @p, @c, @pu)", c, tx))
+                {
+                    cmdD.Parameters.AddWithValue("@v", idVenta);
+                    cmdD.Parameters.AddWithValue("@p", it.IdProducto);
+                    cmdD.Parameters.AddWithValue("@c", it.Cantidad);
+                    cmdD.Parameters.AddWithValue("@pu", it.PrecioUnitario);
+                    cmdD.ExecuteNonQuery();
+                }
+
+                using var cmdS = new MySqlCommand(
+                    "UPDATE Producto SET Stock = Stock - @c WHERE IdProducto = @p AND Stock >= @c", c, tx);
+                cmdS.Parameters.AddWithValue("@c", it.Cantidad);
+                cmdS.Parameters.AddWithValue("@p", it.IdProducto);
+                if (cmdS.ExecuteNonQuery() == 0)
+                    throw new InvalidOperationException($"Stock insuficiente de {it.Producto}.");
+            }
+
+            tx.Commit();
+            return boleta;
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Servicios/DevolucionServicio.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Servicios;
+
+public class DevolucionServicio
+{
+    private readonly IDevolucionRepositorio _repo;
+    private readonly IEnumerable<IReglaDevolucion> _reglas;
+
+    public DevolucionServicio(IDevolucionRepositorio repo, IEnumerable<IReglaDevolucion> reglas)
+    {
+        _repo = repo;
+        _reglas = reglas;
+    }
+
+    public List<DetalleVentaVista> ListarDetallesVenta() => _repo.ListarDetallesVenta();
+
+    public List<DevolucionVista> Listar() => _repo.Listar();
+
+    public string? Registrar(DetalleVentaVista detalle, int cantidad, string motivo, string observacion)
+    {
+        foreach (var regla in _reglas)
+        {
+            var error = regla.Validar(detalle, cantidad, DateTime.Today);
+            if (error != null) return error;
+        }
+
+        _repo.Insertar(new Devolucion
+        {
+            IdDetalle = detalle.IdDetalle,
+            Fecha = DateTime.Today,
+            Cantidad = cantidad,
+            Motivo = motivo,
+            Observacion = observacion
+        });
+        return null;
+    }
+
+    public void Aprobar(int id, string resolucion, string destino) =>
+        _repo.Resolver(id, "Aprobada", resolucion, destino);
+
+    public void Rechazar(int id) =>
+        _repo.Resolver(id, "Rechazada", null, null);
+}
+</file>
+
+<file path="InkafarmaProyecto/Servicios/Reglas.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Servicios;
+
+public class ReglaPlazo : IReglaDevolucion
+{
+    private readonly int _dias;
+
+    public ReglaPlazo(int dias)
+    {
+        _dias = dias;
+    }
+
+    public string? Validar(DetalleVentaVista detalle, int cantidad, DateTime fechaDevolucion)
+    {
+        int transcurridos = (fechaDevolucion.Date - detalle.FechaVenta.Date).Days;
+        return transcurridos > _dias ? $"Fuera de plazo (máximo {_dias} días)." : null;
+    }
+}
+
+public class ReglaCantidad : IReglaDevolucion
+{
+    public string? Validar(DetalleVentaVista detalle, int cantidad, DateTime fechaDevolucion)
+    {
+        return cantidad < 1 || cantidad > detalle.Cantidad
+            ? $"Cantidad inválida (máximo {detalle.Cantidad})."
+            : null;
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Servicios/VentaServicio.cs">
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Modelos;
+
+namespace InkafarmaProyecto.Servicios;
+
+public class VentaServicio
+{
+    private readonly IVentaRepositorio _repo;
+
+    public VentaServicio(IVentaRepositorio repo)
+    {
+        _repo = repo;
+    }
+
+    public List<VentaVista> Listar() => _repo.Listar();
+
+    public string Registrar(int idCliente, int idBotica, List<ItemVenta> items)
+    {
+        if (items.Count == 0)
+            throw new InvalidOperationException("Agrega al menos un producto.");
+
+        var venta = new Venta
+        {
+            IdCliente = idCliente,
+            IdBotica = idBotica,
+            Fecha = DateTime.Today,
+            Total = items.Sum(i => i.Subtotal)
+        };
+        return _repo.Registrar(venta, items);
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Form1.cs">
+namespace InkafarmaProyecto
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Form1.Designer.cs">
+namespace InkafarmaProyecto
+{
+    partial class Form1
+    {
+        /// <summary>
+        ///  Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        ///  Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        ///  Required method for Designer support - do not modify
+        ///  the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            components = new System.ComponentModel.Container();
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(800, 450);
+            Text = "Form1";
+        }
+
+        #endregion
+    }
+}
+</file>
+
+<file path="InkafarmaProyecto/Form1.resx">
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>
+</file>
+
+<file path="InkafarmaProyecto/InkafarmaProyecto.csproj">
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="26.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="clave.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
+</file>
+
+<file path="InkafarmaProyecto/Program.cs">
+using InkafarmaProyecto.Formularios;
+using InkafarmaProyecto.Interfaces;
+using InkafarmaProyecto.Repositorios;
+using InkafarmaProyecto.Servicios;
+
+namespace InkafarmaProyecto;
+
+static class Program
+{
+    [STAThread]
+    static void Main()
+    {
+        ApplicationConfiguration.Initialize();
+
+        var clave = File.ReadAllText("clave.txt").Trim();
+        var conexion = new ConexionBD($"Server=localhost;Database=inkafarma_proyecto;Uid=root;Pwd={clave};");
+
+        var clientes = new ClienteRepositorio(conexion);
+        var productos = new ProductoRepositorio(conexion);
+        var boticas = new BoticaRepositorio(conexion);
+
+        var ventaServicio = new VentaServicio(new VentaRepositorio(conexion));
+
+        var reglas = new List<IReglaDevolucion> { new ReglaPlazo(7), new ReglaCantidad() };
+        var devolucionServicio = new DevolucionServicio(new DevolucionRepositorio(conexion), reglas);
+
+        var reportes = new List<IReporte>
+        {
+            new ReporteDevolucionesPorMotivo(conexion),
+            new ReporteDevolucionesPorBotica(conexion),
+            new ReporteDevolucionesPorMes(conexion),
+            new ReporteProductosMasDevueltos(conexion)
+        };
+
+        var opciones = new List<(string, Func<Form>)>
+        {
+            ("1. Clientes", () => new FormClientes(clientes)),
+            ("2. Productos y boticas", () => new FormProductosBoticas(productos, boticas)),
+            ("3. Ventas", () => new FormVentas(ventaServicio, clientes, boticas, productos)),
+            ("4. Devoluciones", () => new FormDevoluciones(devolucionServicio)),
+            ("5. Reportes", () => new FormReportes(reportes))
+        };
+
+        Application.Run(new FormMenu(opciones));
+    }
+}
+</file>
+
+<file path=".gitattributes">
+###############################################################################
+# Set default behavior to automatically normalize line endings.
+###############################################################################
+* text=auto
+
+###############################################################################
+# Set default behavior for command prompt diff.
+#
+# This is need for earlier builds of msysgit that does not have it on by
+# default for csharp files.
+# Note: This is only used by command line
+###############################################################################
+#*.cs     diff=csharp
+
+###############################################################################
+# Set the merge driver for project and solution files
+#
+# Merging from the command prompt will add diff markers to the files if there
+# are conflicts (Merging from VS is not affected by the settings below, in VS
+# the diff markers are never inserted). Diff markers may cause the following 
+# file extensions to fail to load in VS. An alternative would be to treat
+# these files as binary and thus will always conflict and require user
+# intervention with every merge. To do so, just uncomment the entries below
+###############################################################################
+#*.sln       merge=binary
+#*.csproj    merge=binary
+#*.vbproj    merge=binary
+#*.vcxproj   merge=binary
+#*.vcproj    merge=binary
+#*.dbproj    merge=binary
+#*.fsproj    merge=binary
+#*.lsproj    merge=binary
+#*.wixproj   merge=binary
+#*.modelproj merge=binary
+#*.sqlproj   merge=binary
+#*.wwaproj   merge=binary
+
+###############################################################################
+# behavior for image files
+#
+# image files are treated as binary by default.
+###############################################################################
+#*.jpg   binary
+#*.png   binary
+#*.gif   binary
+
+###############################################################################
+# diff behavior for common document formats
+# 
+# Convert binary document formats to text before diffing them. This feature
+# is only available from the command line. Turn it on by uncommenting the 
+# entries below.
+###############################################################################
+#*.doc   diff=astextplain
+#*.DOC   diff=astextplain
+#*.docx  diff=astextplain
+#*.DOCX  diff=astextplain
+#*.dot   diff=astextplain
+#*.DOT   diff=astextplain
+#*.pdf   diff=astextplain
+#*.PDF   diff=astextplain
+#*.rtf   diff=astextplain
+#*.RTF   diff=astextplain
+</file>
+
+<file path="InkafarmaProyecto.slnx">
+<Solution>
+  <Project Path="InkafarmaProyecto/InkafarmaProyecto.csproj" />
+</Solution>
+</file>
+
+<file path=".gitignore">
+## Ignore Visual Studio temporary files, build results, and
+## files generated by popular Visual Studio add-ons.
+##
+## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Mono auto generated files
+mono_crash.*
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+# Uncomment if you have tasks that create the project's static files in wwwroot
+#wwwroot/
+
+# Visual Studio 2017 auto generated files
+Generated\ Files/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# Build Results of an ATL Project
+[Dd]ebugPS/
+[Rr]eleasePS/
+dlldata.c
+
+# Benchmark Results
+BenchmarkDotNet.Artifacts/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# StyleCop
+StyleCopReport.xml
+
+# Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Chutzpah Test files
+_Chutzpah*
+
+# Visual C++ cache files
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Visual Studio Trace Files
+*.e2e
+
+# TFS 2012 Local Workspace
+$tf/
+
+# Guidance Automation Toolkit
+*.gpState
+
+# ReSharper is a .NET coding add-in
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# TeamCity is a build add-in
+_TeamCity*
+
+# DotCover is a Code Coverage Tool
+*.dotCover
+
+# AxoCover is a Code Coverage Tool
+.axoCover/*
+!.axoCover/settings.json
+
+# Coverlet is a free, cross platform Code Coverage Tool
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# Visual Studio code coverage results
+*.coverage
+*.coveragexml
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# MightyMoose
+*.mm.*
+AutoTest.Net/
+
+# Web workbench (sass)
+.sass-cache/
+
+# Installshield output folder
+[Ee]xpress/
+
+# DocProject is a documentation generator add-in
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+# Click-Once directory
+publish/
+
+# Publish Web Output
+*.[Pp]ublish.xml
+*.azurePubxml
+# Note: Comment the next line if you want to checkin your web deploy settings,
+# but database connection strings (with potential passwords) will be unencrypted
+*.pubxml
+*.publishproj
+
+# Microsoft Azure Web App publish settings. Comment the next line if you want to
+# checkin your Azure Web App publish settings, but sensitive information contained
+# in these scripts will be unencrypted
+PublishScripts/
+
+# NuGet Packages
+*.nupkg
+# NuGet Symbol Packages
+*.snupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+# Uncomment if necessary however generally it will be regenerated when needed
+#!**/[Pp]ackages/repositories.config
+# NuGet v3's project.json files produces more ignorable files
+*.nuget.props
+*.nuget.targets
+
+# Microsoft Azure Build Output
+csx/
+*.build.csdef
+
+# Microsoft Azure Emulator
+ecf/
+rcf/
+
+# Windows Store app package directories and files
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.appxupload
+
+# Visual Studio cache files
+# files ending in .cache can be ignored
+*.[Cc]ache
+# but keep track of directories ending in .cache
+!?*.[Cc]ache/
+
+# Others
+ClientBin/
+~$*
+*~
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+orleans.codegen.cs
+
+# Including strong name files can present a security risk
+# (https://github.com/github/gitignore/pull/2483#issue-259490424)
+#*.snk
+
+# Since there are multiple workflows, uncomment next line to ignore bower_components
+# (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
+#bower_components/
+
+# RIA/Silverlight projects
+Generated_Code/
+
+# Backup & report files from converting an old project file
+# to a newer Visual Studio version. Backup files are not needed,
+# because we have git ;-)
+_UpgradeReport_Files/
+Backup*/
+UpgradeLog*.XML
+UpgradeLog*.htm
+ServiceFabricBackup/
+*.rptproj.bak
+
+# SQL Server files
+*.mdf
+*.ldf
+*.ndf
+
+# Business Intelligence projects
+*.rdl.data
+*.bim.layout
+*.bim_*.settings
+*.rptproj.rsuser
+*- [Bb]ackup.rdl
+*- [Bb]ackup ([0-9]).rdl
+*- [Bb]ackup ([0-9][0-9]).rdl
+
+# Microsoft Fakes
+FakesAssemblies/
+
+# GhostDoc plugin setting file
+*.GhostDoc.xml
+
+# Node.js Tools for Visual Studio
+.ntvs_analysis.dat
+node_modules/
+
+# Visual Studio 6 build log
+*.plg
+
+# Visual Studio 6 workspace options file
+*.opt
+
+# Visual Studio 6 auto-generated workspace file (contains which files were open etc.)
+*.vbw
+
+# Visual Studio LightSwitch build output
+**/*.HTMLClient/GeneratedArtifacts
+**/*.DesktopClient/GeneratedArtifacts
+**/*.DesktopClient/ModelManifest.xml
+**/*.Server/GeneratedArtifacts
+**/*.Server/ModelManifest.xml
+_Pvt_Extensions
+
+# Paket dependency manager
+.paket/paket.exe
+paket-files/
+
+# FAKE - F# Make
+.fake/
+
+# CodeRush personal settings
+.cr/personal
+
+# Python Tools for Visual Studio (PTVS)
+__pycache__/
+*.pyc
+
+# Cake - Uncomment if you are using it
+# tools/**
+# !tools/packages.config
+
+# Tabs Studio
+*.tss
+
+# Telerik's JustMock configuration file
+*.jmconfig
+
+# BizTalk build output
+*.btp.cs
+*.btm.cs
+*.odx.cs
+*.xsd.cs
+
+# OpenCover UI analysis results
+OpenCover/
+
+# Azure Stream Analytics local run output
+ASALocalRun/
+
+# MSBuild Binary and Structured Log
+*.binlog
+
+# NVidia Nsight GPU debugger configuration file
+*.nvuser
+
+# MFractors (Xamarin productivity tool) working folder
+.mfractor/
+
+# Local History for Visual Studio
+.localhistory/
+
+# BeatPulse healthcheck temp database
+healthchecksdb
+
+# Backup folder for Package Reference Convert tool in Visual Studio 2017
+MigrationBackup/
+
+# Ionide (cross platform F# VS Code tools) working folder
+.ionide/
+
+# Fody - auto-generated XML schema
+FodyWeavers.xsd
+
+clave.txt
+</file>
+
+</files>
